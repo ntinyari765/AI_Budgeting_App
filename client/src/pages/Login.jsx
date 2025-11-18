@@ -1,24 +1,25 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../services/authService";
-import { useAuth } from "../hooks/useAuth";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login } = useAuth();
-  const navigate = useNavigate();
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // reset error
     try {
-      const data = await loginUser({ email, password });
-      login(data.user);
-      localStorage.setItem("token", data.token);
+      console.log("Login attempt with:", { email, password });
+      await login({ email, password });
+      console.log("Login successful");
       navigate("/dashboard");
     } catch (err) {
+      console.error("Login error:", err);
+      // Axios error structure
       setError(err.response?.data?.message || "Login failed");
     }
   };
@@ -42,7 +43,17 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button type="submit" style={{ background: "var(--purple)", color: "white", padding: "0.5rem 1rem", border: "none", borderRadius: "6px", cursor: "pointer" }}>
+        <button
+          type="submit"
+          style={{
+            background: "var(--purple)",
+            color: "white",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
           Login
         </button>
       </form>

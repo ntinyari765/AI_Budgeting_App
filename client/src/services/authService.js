@@ -1,15 +1,17 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/users";
+const USER_API = `${import.meta.env.VITE_API_URL}/users`;
 
-// Register
-export const registerUser = async (userData) => {
-  const res = await axios.post(`${API_URL}/register`, userData);
+console.log("API URL being used:", USER_API); // for debugging
+
+
+export const registerUser = async (data) => {
+  const res = await axios.post(`${USER_API}/register`, data);
   return res.data;
 };
 
-// Login
-export const loginUser = async (userData) => {
-  const res = await axios.post(`${API_URL}/login`, userData);
+export const loginUser = async (data) => {
+  const res = await axios.post(`${USER_API}/login`, data);
   return res.data;
 };
+
