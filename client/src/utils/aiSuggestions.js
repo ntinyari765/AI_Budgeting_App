@@ -24,12 +24,14 @@ export const getSuggestions = (transactions) => {
   }
 
   // Highlight the highest expense category
-  const highestCategory = Object.keys(categoryTotals).reduce((a, b) =>
+  const categoryKeys = Object.keys(categoryTotals);
+if (categoryKeys.length > 0) {
+  const highestCategory = categoryKeys.reduce((a, b) =>
     categoryTotals[a] > categoryTotals[b] ? a : b
   );
-  if (highestCategory) {
-    suggestions.push(`Spending spike in ${highestCategory}. Try to reduce it.`);
-  }
+  suggestions.push(`Spending spike in ${highestCategory}. Try to reduce it.`);
+}
+
 
   return suggestions;
 };
