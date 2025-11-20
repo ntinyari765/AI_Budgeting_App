@@ -1,6 +1,7 @@
 import express from "express";
 import { auth } from "../middleware/auth.js";
 import Transaction from "../models/Transaction.js";
+import nodemailer from "nodemailer";
 
 const router = express.Router();
 
@@ -65,6 +66,80 @@ router.delete("/:id", async (req, res) => {
     res.json({ message: "Deleted successfully" });
   } catch (error) {
     res.status(400).json({ error: "Delete failed" });
+  }
+});
+
+// Configure nodemailer
+const transporter = nodemailer.createTransport({
+  service: "gmail", // or your email service
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// POST new transaction
+router.post("/", auth, async (req, res) => {
+  try {
+    const { description, amount, category, type } = req.body;
+
+    // Create transaction
+    const transaction = new Transaction({
+      user: req.user.id,
+      description,
+      amount,
+      category,
+      type,
+    });
+
+    await transaction.save();
+
+    // High spending alert threshold
+    const HIGH_SPENDING_THRESHOLD = 10000;
+
+    if (amount > HIGH_SPENDING_THRESHOLD) {
+      const userEmail = req.user.email; // make sure user has email in DB
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: userEmail,
+        subject: "High Spending Alert",
+        text: `Alert! You just added a transaction of KES ${amount} (${description}).`,
+      });
+    }
+
+    res.status(201).json(transaction);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT update transaction (optional similar logic)
+router.put("/:id", auth, async (req, res) => {
+  try {
+    const { description, amount, category, type } = req.body;
+    const transaction = await Transaction.findByIdAndUpdate(
+      req.params.id,
+      { description, amount, category, type },
+      { new: true }
+    );
+
+    // High spending alert
+    const HIGH_SPENDING_THRESHOLD = 20000;
+    if (amount > HIGH_SPENDING_THRESHOLD) {
+      const userEmail = req.user.email;
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: userEmail,
+        subject: "High Spending Alert",
+        text: `Alert! You updated a transaction to KES ${amount} (${description}).`,
+      });
+    }
+
+    res.json(transaction);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

@@ -6,6 +6,9 @@ import cors from "cors";
 import transactionRoutes from './routes/transactionroutes.js';
 import userRoutes from './routes/userroutes.js';
 
+import aiInsightsRouter from "./routes/aiInsights.js";
+import highSpendingRouter from "./routes/highSpending.js";
+
 dotenv.config();
 
 const app = express();
@@ -22,6 +25,9 @@ app.use(express.json());
 // Routes
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/users', userRoutes);
+
+app.use("/api/ai/insights", aiInsightsRouter);
+app.use("/api/transactions/high-spending-alert", highSpendingRouter);
 
 // Basic route
 app.get("/", (req, res) => {
