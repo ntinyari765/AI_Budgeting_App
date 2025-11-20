@@ -18,6 +18,60 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+.container {
+  max-width: 850px;
+  margin: auto;
+  padding: 20px;
+}
+
+.title {
+  margin-bottom: 1.5rem;
+  color: #4b0082;
+}
+
+.card {
+  background: white;
+  padding: 18px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.chart-card {
+  height: 350px;
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 250px;
+}
+
+.transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-btn {
+  background: #6a0dad;
+  padding: 4px 10px;
+  color: white;
+  border-radius: 4px;
+}
+
+.delete-btn {
+  background: #ff4d4d;
+  padding: 4px 10px;
+  color: white;
+  border-radius: 4px;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

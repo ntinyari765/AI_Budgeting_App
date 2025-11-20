@@ -1,243 +1,222 @@
-import React, { useEffect, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import {
-  getTransactions,
-  addTransaction,
-  updateTransaction,
-  deleteTransaction,
-} from "../services/transactionService";
-import { getSuggestions } from "../utils/aiSuggestions";
+import React, { useEffect, useState, useContext } from "react";
+import axios from "axios";
+import { AuthContext } from "../context/AuthContext";
+import { Chart } from "chart.js/auto";
 
-export default function Dashboard() {
-  const { user } = useAuth();
+const API_URL = "http://localhost:5000/api/transactions";
+
+const incomeCategories = ["Salary", "Business", "Other"];
+const expenseCategories = ["Food", "Transport", "Entertainment", "Bills", "Other"];
+
+const Dashboard = () => {
+  const { user } = useContext(AuthContext);
   const [transactions, setTransactions] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
   const [form, setForm] = useState({
-    type: "",
-    category: "",
-    amount: "",
     description: "",
+    amount: "",
+    category: "",
+    type: "",
   });
-
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ type: "", category: "", amount: "", description: "" });
 
-  const token = localStorage.getItem("token");
+  // Fetch transactions
+  const fetchTransactions = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(API_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTransactions(res.data);
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
 
-  // Options for dropdowns
-  const typeOptions = ["Income", "Expense"];
-  const categoryOptions = ["Salary", "Food", "Transport", "Entertainment", "Health", "Bills", "Others"];
-
-  // Fetch transactions on load
   useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const data = await getTransactions(token);
-        setTransactions(data);
-
-        // Safely get AI suggestions
-        const aiSuggestions = getSuggestions(data || []);
-        setSuggestions(aiSuggestions);
-      } catch (err) {
-        console.error("Failed to fetch transactions:", err);
-        setSuggestions(["Unable to generate suggestions."]);
-      }
-    };
     fetchTransactions();
-  }, [token]);
+  }, []);
 
-  // Add transaction
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const handleAdd = async (e) => {
+  // Add or update transaction
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...form, amount: Number(form.amount) };
-      const newTrans = await addTransaction(payload, token);
-      const updatedTransactions = [newTrans, ...transactions];
-      setTransactions(updatedTransactions);
-      setForm({ type: "", category: "", amount: "", description: "" });
+      const token = localStorage.getItem("token");
 
-      // Update AI suggestions
-      setSuggestions(getSuggestions(updatedTransactions));
-    } catch (err) {
-      console.error("Add transaction error:", err);
+      const payload = {
+        ...form,
+        amount: Number(form.amount), // ensure amount is a number
+        type: form.type, // explicitly include type
+      };
+
+      if (editingId) {
+        await axios.put(`${API_URL}/${editingId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setEditingId(null);
+      } else {
+        await axios.post(API_URL, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      setForm({ description: "", amount: "", category: "", type: "" });
+      fetchTransactions();
+    } catch (error) {
+      console.error("Save error:", error);
     }
   };
 
   // Delete transaction
-  const handleDelete = async (id) => {
+  const deleteTransaction = async (id) => {
     try {
-      await deleteTransaction(id, token);
-      const updatedTransactions = transactions.filter((t) => t._id !== id);
-      setTransactions(updatedTransactions);
-
-      // Update AI suggestions
-      setSuggestions(getSuggestions(updatedTransactions));
-    } catch (err) {
-      console.error("Delete transaction error:", err);
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_URL}/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchTransactions();
+    } catch (error) {
+      console.error("Delete error:", error);
     }
   };
 
-  // Edit transaction
-  const handleEditClick = (trans) => {
-    setEditingId(trans._id);
-    setEditForm({
-      type: trans.type,
-      category: trans.category,
-      amount: trans.amount,
-      description: trans.description,
+  // Start editing a transaction
+  const editTransaction = (t) => {
+    setForm({
+      description: t.description,
+      amount: t.amount,
+      category: t.category,
+      type: t.type,
     });
+    setEditingId(t._id);
   };
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditForm({ type: "", category: "", amount: "", description: "" });
-  };
+  // Chart setup
+  useEffect(() => {
+    if (!transactions.length) return;
 
-  const handleSaveEdit = async (id) => {
-    try {
-      const payload = { ...editForm, amount: Number(editForm.amount) };
-      const updated = await updateTransaction(id, payload, token);
-      const updatedTransactions = transactions.map((t) => (t._id === id ? updated : t));
-      setTransactions(updatedTransactions);
-      handleCancelEdit();
+    const ctx = document.getElementById("spendingChart");
+    if (window.myChart) window.myChart.destroy();
 
-      // Update AI suggestions
-      setSuggestions(getSuggestions(updatedTransactions));
-    } catch (err) {
-      console.error("Update transaction error:", err);
-    }
-  };
+    const incomeData = incomeCategories.map((cat) =>
+      transactions
+        .filter((t) => t.type === "income" && t.category === cat)
+        .reduce((sum, t) => sum + Number(t.amount), 0)
+    );
+
+    const expenseData = expenseCategories.map((cat) =>
+      transactions
+        .filter((t) => t.type === "expense" && t.category === cat)
+        .reduce((sum, t) => sum + Number(t.amount), 0)
+    );
+
+    window.myChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: [...incomeCategories, ...expenseCategories],
+        datasets: [
+          {
+            data: [...incomeData, ...expenseData],
+            backgroundColor: [
+              "#6a0dad", "#b57edc", "#00b894", // income colors
+              "#ff6f61", "#e17055", "#fdcb6e", "#d63031", "#0984e3", // expense colors
+            ],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom" },
+        },
+      },
+    });
+  }, [transactions]);
 
   return (
-    <div>
-      <h2>Welcome, {user.name}</h2>
+    <div className="container">
+      <h2 style={{ marginBottom: "1.5rem", color: "var(--purple-dark)" }}>
+        Welcome, {user?.name}
+      </h2>
 
-      {/* Add transaction form */}
-      <div className="card" style={{ marginBottom: "1rem" }}>
-        <h3>Add Transaction</h3>
-        <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <select name="type" value={form.type} onChange={handleChange} required>
-            <option value="" disabled>Select Type</option>
-            {typeOptions.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-
-          <select name="category" value={form.category} onChange={handleChange} required>
-            <option value="" disabled>Select Category</option>
-            {categoryOptions.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-
-          <input
-            name="amount"
-            placeholder="Amount"
-            type="number"
-            value={form.amount}
-            onChange={handleChange}
+      {/* Add/Edit Transaction Card */}
+      <div className="card">
+        <h3>{editingId ? "Edit Transaction" : "Add Transaction"}</h3>
+        <form onSubmit={handleSubmit}>
+        
+    
+          <select
+            value={form.type}
+            onChange={(e) => setForm({ ...form, type: e.target.value, category: "" })}
             required
-          />
-          <input
-            name="description"
+          >
+            <option value="">Select Type</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+
+          <select
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            required
+          >
+            <option value="">Select Category</option>
+            {(form.type === "income" ? incomeCategories : expenseCategories).map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
+            <input
+            type="text"
             placeholder="Description"
             value={form.description}
-            onChange={handleChange}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            required
           />
-          <button
-            type="submit"
-            style={{ background: "var(--purple)", color: "white", border: "none", padding: "0.5rem 1rem", borderRadius: "6px", cursor: "pointer" }}
-          >
-            Add
-          </button>
+
+           <input
+            type="number"
+            placeholder="Amount"
+            value={form.amount}
+            onChange={(e) => setForm({ ...form, amount: e.target.value })}
+            required
+          />
+
+          <button type="submit">{editingId ? "Save Changes" : "Add Transaction"}</button>
         </form>
       </div>
 
-      {/* Transactions list */}
+      {/* Chart Card */}
       <div className="card">
-        <h3>Your Transactions</h3>
+        <h3>Spending & Income Breakdown</h3>
+        <div style={{ width: "300px", height: "300px", margin: "0 auto" }}>
+          <canvas id="spendingChart"></canvas>
+        </div>
+      </div>
+
+      {/* Latest Transactions Card */}
+      <div className="card">
+        <h3>Latest Transactions</h3>
         {transactions.length === 0 && <p>No transactions yet.</p>}
         <ul>
           {transactions.map((t) => (
-            <li key={t._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0", borderBottom: "1px solid #ddd" }}>
-              {editingId === t._id ? (
-                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                  <select
-                    name="type"
-                    value={editForm.type}
-                    onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
-                  >
-                    <option value="" disabled>Select Type</option>
-                    {typeOptions.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    name="category"
-                    value={editForm.category}
-                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                  >
-                    <option value="" disabled>Select Category</option>
-                    {categoryOptions.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-
-                  <input
-                    name="amount"
-                    placeholder="Amount"
-                    type="number"
-                    value={editForm.amount}
-                    onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
-                  />
-                  <input
-                    name="description"
-                    placeholder="Description"
-                    value={editForm.description}
-                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  />
-                  <button
-                    onClick={() => handleSaveEdit(t._id)}
-                    style={{ background: "green", color: "white", border: "none", padding: "0.3rem 0.6rem", borderRadius: "6px" }}
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={handleCancelEdit}
-                    style={{ background: "gray", color: "white", border: "none", padding: "0.3rem 0.6rem", borderRadius: "6px" }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span>{t.type} - {t.category}: ${t.amount}</span>
-                  <span>
-                    <button onClick={() => handleEditClick(t)} style={{ color: "blue", marginRight: "0.5rem", cursor: "pointer" }}>Edit</button>
-                    <button onClick={() => handleDelete(t._id)} style={{ color: "red", cursor: "pointer" }}>Delete</button>
-                  </span>
-                </>
-              )}
+            <li key={t._id} style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>
+                <strong>{t.description}</strong> ({t.type || "N/A"}) — {t.category}
+              </span>
+              <span>KES {t.amount}</span>
+              <div>
+                <button onClick={() => editTransaction(t)}>Edit</button>
+                <button onClick={() => deleteTransaction(t._id)}>Delete</button>
+              </div>
             </li>
           ))}
         </ul>
-
-        {/* AI suggestions */}
-        <div style={{ marginTop: "1rem", background: "#f9f9f9", padding: "1rem", borderRadius: "6px" }}>
-          <h4>AI Suggestions</h4>
-          {suggestions.length === 0 ? (
-            <p>No suggestions yet.</p>
-          ) : (
-            <ul>
-              {suggestions.map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
     </div>
   );
-}
+};
+
+export default Dashboard;

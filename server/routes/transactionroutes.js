@@ -1,79 +1,71 @@
-import express from 'express';
-import Transaction from '../models/Transaction.js';
-import { protect } from "../middleware/authMiddleware.js";
+import express from "express";
+import { auth } from "../middleware/auth.js";
+import Transaction from "../models/Transaction.js";
 
 const router = express.Router();
 
-// GET all transactions (protected)
-router.get('/', protect, async (req, res) => {
+// Protect all routes
+router.use(auth);
+
+// GET all transactions for logged in user
+router.get("/", async (req, res) => {
   try {
     const transactions = await Transaction.find({ user: req.user.id });
     res.json(transactions);
-  } catch (err) {
-    console.error("GET /transactions error:", err);
-    res.status(500).json({ message: err.message });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-// POST a new transaction (protected)
-router.post('/', protect, async (req, res) => {
+// ADD a transaction
+router.post("/", async (req, res) => {
   try {
-    const { type, category, amount, description } = req.body;
-
-    const transaction = new Transaction({
+    const newTransaction = new Transaction({
       user: req.user.id,
-      type,
-      category,
-      amount,
-      description,
+      description: req.body.description,
+      amount: req.body.amount,
+      category: req.body.category,
+      type: req.body.type, // income or expense
     });
 
-    await transaction.save();
-    res.status(201).json(transaction);
-
-  } catch (err) {
-    console.error("POST /transactions error:", err);
-    res.status(500).json({ message: err.message });
+    await newTransaction.save();
+    res.json(newTransaction);
+  } catch (error) {
+    res.status(400).json({ error: "Error adding transaction" });
   }
 });
 
-
-// UPDATE (PUT)
-router.put('/:id', protect, async (req, res) => {
+// UPDATE a transaction
+router.put("/:id", async (req, res) => {
   try {
-    const transaction = await Transaction.findOneAndUpdate(
-      { _id: req.params.id, user: req.user.id }, // ensure user owns this
+    const updated = await Transaction.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
       req.body,
       { new: true }
     );
 
-    if (!transaction) return res.status(404).json({ message: "Transaction not found" });
+    if (!updated) return res.status(404).json({ error: "Not found" });
 
-    res.json(transaction);
-  } catch (err) {
-    console.error("PUT /transactions/:id error:", err);
-    res.status(500).json({ message: err.message });
+    res.json(updated);
+  } catch (error) {
+    res.status(400).json({ error: "Update failed" });
   }
 });
 
-// DELETE
-router.delete('/:id', protect, async (req, res) => {
+// DELETE a transaction
+router.delete("/:id", async (req, res) => {
   try {
-    const transaction = await Transaction.findOneAndDelete({
+    const deleted = await Transaction.findOneAndDelete({
       _id: req.params.id,
-      user: req.user.id, // ensure user owns this
+      user: req.user.id,
     });
 
-    if (!transaction) return res.status(404).json({ message: "Transaction not found" });
+    if (!deleted) return res.status(404).json({ error: "Not found" });
 
-    res.json({ message: "Transaction removed" });
-  } catch (err) {
-    console.error("DELETE /transactions/:id error:", err);
-    res.status(500).json({ message: err.message });
+    res.json({ message: "Deleted successfully" });
+  } catch (error) {
+    res.status(400).json({ error: "Delete failed" });
   }
 });
 
 export default router;
-
-
-
