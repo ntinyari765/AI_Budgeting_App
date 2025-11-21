@@ -470,10 +470,10 @@ Response (200):
 ![Dashboard Screenshot](assets/dashboard.png)
 
 ### Transaction Management
-![Transactions Screenshot](assets\transactions.png)
+![Transactions Screenshot](assets/transactions.png)
 
 ### Budget Tracking
-![Budget Tracking Screenshot](assets\tracking.png)
+![Budget Tracking Screenshot](assets/tracking.png)
 
 ---
 
