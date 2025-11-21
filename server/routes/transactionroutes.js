@@ -1,6 +1,6 @@
 import express from "express";
 import { auth } from "../middleware/auth.js";
-import Transaction from "../models/Transaction.js";
+import Transaction from "../models/transaction.js";
 import nodemailer from "nodemailer";
 
 const router = express.Router();
