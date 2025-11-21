@@ -15,7 +15,7 @@ const app = express();
 
 // Enable CORS for frontend
 app.use(cors({
-  origin: "https://ai-budgeting-app-eight.vercel.app/", // frontend URL
+  origin: "https://ai-budgeting-app-gilt.vercel.app", // frontend URL
   credentials: true // allows sending cookies if needed later
 }));
 
