@@ -473,7 +473,7 @@ Response (200):
 ![Transactions Screenshot](client\src\assets\transactions.png)
 
 ### Budget Tracking
-![Budget Tracking Screenshot](client\src\assets\tracking.png)
+![Budget Tracking Screenshot](AI_Budgeting_App\client\src\assets\tracking.png)
 
 ---
 
