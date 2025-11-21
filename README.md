@@ -467,16 +467,13 @@ Response (200):
 ## 📸 Screenshots
 
 ### Dashboard Overview
-![Dashboard Screenshot](https://via.placeholder.com/800x500?text=Dashboard+Overview)
+![Dashboard Screenshot](C:\Users\admin\Desktop\AI_Budgeting_App\client\src\assets\dashboard.png)
 
 ### Transaction Management
-![Transactions Screenshot](https://via.placeholder.com/800x500?text=Transaction+Management)
+![Transactions Screenshot](C:\Users\admin\Desktop\AI_Budgeting_App\client\src\assets\transactions.png)
 
 ### Budget Tracking
-![Budget Tracking Screenshot](https://via.placeholder.com/800x500?text=Budget+Tracking)
-
-### AI Insights
-![AI Insights Screenshot](https://via.placeholder.com/800x500?text=AI+Insights)
+![Budget Tracking Screenshot](C:\Users\admin\Desktop\AI_Budgeting_App\client\src\assets\tracking.png)
 
 ---
 
