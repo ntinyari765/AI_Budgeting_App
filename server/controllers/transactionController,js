@@ -1,4 +1,4 @@
-import Transaction from "../models/Transaction.js";
+import Transaction from "../models/transaction.js";
 
 export const getTransactions = async (req, res) => {
   const tx = await Transaction.find({ user: req.user.id }).sort({ createdAt: -1 });
