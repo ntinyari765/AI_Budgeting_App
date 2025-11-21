@@ -467,13 +467,13 @@ Response (200):
 ## 📸 Screenshots
 
 ### Dashboard Overview
-![Dashboard Screenshot](client\src\assets\dashboard.png)
+![Dashboard Screenshot](assets/dashboard.png)
 
 ### Transaction Management
-![Transactions Screenshot](client\src\assets\transactions.png)
+![Transactions Screenshot](assets\transactions.png)
 
 ### Budget Tracking
-![Budget Tracking Screenshot](AI_Budgeting_App\client\src\assets\tracking.png)
+![Budget Tracking Screenshot](assets\tracking.png)
 
 ---
 
